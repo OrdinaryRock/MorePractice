@@ -17,8 +17,8 @@ AMPCharacterBase::AMPCharacterBase()
 	Camera = CreateDefaultSubobject<UCameraComponent>("Camera");
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("StaticMesh");
 
-	SetRootComponent(StaticMesh);
-	SpringArm->SetupAttachment(StaticMesh);
+	StaticMesh->SetupAttachment(RootComponent);
+	SpringArm->SetupAttachment(RootComponent);
 	Camera->SetupAttachment(SpringArm);
 
 	BaseTurnRate = 45.0f;
