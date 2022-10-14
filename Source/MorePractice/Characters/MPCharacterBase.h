@@ -35,11 +35,18 @@ protected:
 	void MoveRight(float Amount);
 	void TurnAtRate(float Amount);
 	void LookUpAtRate(float Amount);
+	void InteractPress();
+
+	UFUNCTION(BlueprintNativeEvent)
+	void TraceForward();
+	void TraceForward_Implementation();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera");
 	float BaseTurnRate;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera");
 	float BaseLookUpAtRate;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction");
+	float TraceDistance;
 
 public:	
 

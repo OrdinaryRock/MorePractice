@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/Controller.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 AMPCharacterBase::AMPCharacterBase()
@@ -23,6 +24,7 @@ AMPCharacterBase::AMPCharacterBase()
 
 	BaseTurnRate = 45.0f;
 	BaseLookUpAtRate = 45.0f;
+	TraceDistance = 2000.0f;
 
 }
 
@@ -58,6 +60,35 @@ void AMPCharacterBase::LookUpAtRate(float Amount)
 	AddControllerPitchInput(Amount * BaseLookUpAtRate * GetWorld()->GetDeltaSeconds());
 }
 
+void AMPCharacterBase::InteractPress()
+{
+	TraceForward();
+}
+
+void AMPCharacterBase::TraceForward_Implementation()
+{
+	FVector Loc;
+	FRotator Rot;
+	FHitResult Hit;
+
+	GetController()->GetPlayerViewPoint(Loc, Rot);
+
+	FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
+
+	FCollisionQueryParams TraceParams;
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+
+	//Requires special #include "DrawDebugHelpers.h"
+	DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, 5.0f);
+
+	if (bHit)
+	{
+		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(10, 10, 10), FColor::Emerald, false, 5.0f);
+	}
+}
+
 // Called to bind functionality to input
 void AMPCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -65,6 +96,7 @@ void AMPCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMPCharacterBase::InteractPress);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMPCharacterBase::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMPCharacterBase::MoveRight);
