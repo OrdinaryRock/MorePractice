@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+
 #include "MPCharacterBase.generated.h"
 
 class USpringArmComponent;
@@ -41,6 +42,7 @@ protected:
 	void TraceForward();
 	void TraceForward_Implementation();
 
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera");
 	float BaseTurnRate;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera");
@@ -48,9 +50,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction");
 	float TraceDistance;
 
+	UFUNCTION()
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+			bool bFromSweep, const FHitResult& SweepResult);
+
 public:	
+
+	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+
+private:
+	AActor* OldFocusedActor;
 
 };

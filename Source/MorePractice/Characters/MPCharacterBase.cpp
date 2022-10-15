@@ -7,18 +7,20 @@
 #include "Components/InputComponent.h"
 #include "GameFramework/Controller.h"
 #include "DrawDebugHelpers.h"
+#include "../Interact/InteractInterface.h"
 
 // Sets default values
 AMPCharacterBase::AMPCharacterBase()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>("SpringArm");
 	Camera = CreateDefaultSubobject<UCameraComponent>("Camera");
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("StaticMesh");
 
 	StaticMesh->SetupAttachment(RootComponent);
+	StaticMesh->OnComponentBeginOverlap.AddDynamic(this, &AMPCharacterBase::OnOverlapBegin);
 	SpringArm->SetupAttachment(RootComponent);
 	Camera->SetupAttachment(SpringArm);
 
@@ -63,6 +65,14 @@ void AMPCharacterBase::LookUpAtRate(float Amount)
 void AMPCharacterBase::InteractPress()
 {
 	TraceForward();
+	if (OldFocusedActor)
+	{
+		IInteractInterface* Interface = Cast<IInteractInterface>(OldFocusedActor);
+		if (Interface)
+		{
+			Interface->Execute_OnInteract(OldFocusedActor, this);
+		}
+	}
 }
 
 void AMPCharacterBase::TraceForward_Implementation()
@@ -81,12 +91,66 @@ void AMPCharacterBase::TraceForward_Implementation()
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
 
 	//Requires special #include "DrawDebugHelpers.h"
-	DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, 5.0f);
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Orange, false, 5.0f);
 
 	if (bHit)
 	{
-		DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(10, 10, 10), FColor::Emerald, false, 5.0f);
+		//DrawDebugBox(GetWorld(), Hit.ImpactPoint, FVector(10, 10, 10), FColor::Emerald, false, 5.0f);
+		AActor* NewInteractable = Hit.GetActor();
+		
+		
+		if (NewInteractable)
+		{
+			if (NewInteractable != OldFocusedActor)
+			{
+				if (OldFocusedActor)
+				{
+					IInteractInterface* Interface = Cast<IInteractInterface>(OldFocusedActor);
+					if (Interface)
+					{
+						Interface->Execute_EndFocus(OldFocusedActor);
+					}
+				}
+
+				IInteractInterface* Interface = Cast<IInteractInterface>(NewInteractable);
+				if (Interface)
+				{
+					Interface->Execute_StartFocus(NewInteractable);
+				}
+
+				OldFocusedActor = NewInteractable;
+			}
+		}
 	}
+	else
+	{
+		if (OldFocusedActor)
+		{
+			IInteractInterface* Interface = Cast<IInteractInterface>(OldFocusedActor);
+			if (Interface)
+			{
+				Interface->Execute_EndFocus(OldFocusedActor);
+				OldFocusedActor = nullptr;
+
+			}
+		}
+	}
+}
+
+void AMPCharacterBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, 
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	IInteractInterface* Interface = Cast<IInteractInterface>(OtherActor);
+	if (Interface)
+	{
+		Interface->Execute_OnInteract(OtherActor, this);
+	}
+}
+
+void AMPCharacterBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	AMPCharacterBase::TraceForward();
 }
 
 // Called to bind functionality to input
@@ -108,4 +172,3 @@ void AMPCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 
 }
-
