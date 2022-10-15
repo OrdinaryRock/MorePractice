@@ -32,17 +32,19 @@ public:
 
 protected:
 
+	// Functions
 	void MoveForward(float Amount);
 	void MoveRight(float Amount);
 	void TurnAtRate(float Amount);
 	void LookUpAtRate(float Amount);
 	void InteractPress();
 
+	// Trace
 	UFUNCTION(BlueprintNativeEvent)
 	void TraceForward();
 	void TraceForward_Implementation();
 
-
+	// Properties
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera");
 	float BaseTurnRate;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera");
@@ -50,9 +52,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction");
 	float TraceDistance;
 
+	// Overlap
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-			bool bFromSweep, const FHitResult& SweepResult);
+	bool bFromSweep, const FHitResult& SweepResult);
+
+	// Impulse
+	UPROPERTY(EditAnywhere)
+	float ImpulseForce;
+
+	void FireForward();
+
+	UPROPERTY(EditAnywhere)
+	bool bApplyRadialForce;
+	UPROPERTY(EditAnywhere)
+	float RadialImpactRadius;
+	UPROPERTY(EditAnywhere)
+	float RadialImpactForce;
+
+	TArray<FHitResult> HitActors;
 
 public:	
 

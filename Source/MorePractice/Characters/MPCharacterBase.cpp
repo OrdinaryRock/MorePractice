@@ -28,6 +28,11 @@ AMPCharacterBase::AMPCharacterBase()
 	BaseLookUpAtRate = 45.0f;
 	TraceDistance = 2000.0f;
 
+	ImpulseForce = 500.0f;
+	
+	bApplyRadialForce = true;
+	RadialImpactRadius = 200.0f;
+	RadialImpactForce = 2000.0f;
 }
 
 void AMPCharacterBase::MoveForward(float Amount)
@@ -147,6 +152,57 @@ void AMPCharacterBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 	}
 }
 
+void AMPCharacterBase::FireForward()
+{
+	FVector Loc;
+	FRotator Rot;
+	FHitResult Hit;
+
+	GetController()->GetPlayerViewPoint(Loc, Rot);
+
+	FVector Start = Loc;
+	FVector End = Start + (Rot.Vector() * TraceDistance);
+
+	FCollisionQueryParams TraceParams;
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, TraceParams);
+
+	// Checks if we hit something and that something is movable and that something is simulating physics rn
+	if (bHit)
+	{
+		
+		if (Hit.GetActor()->IsRootComponentMovable() && Hit.GetActor()->GetRootComponent()->IsSimulatingPhysics())
+		{
+			UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(Hit.GetActor()->GetRootComponent());
+			if (MeshComp)
+			{
+				FVector CameraForward = Camera->GetForwardVector();
+				MeshComp->AddImpulse(CameraForward * ImpulseForce * MeshComp->GetMass());
+			}
+		}
+
+		if (bApplyRadialForce)
+		{
+			FCollisionShape SphereColShape = FCollisionShape::MakeSphere(RadialImpactRadius);
+			bool bSweepHit = GetWorld()->SweepMultiByChannel(HitActors, Hit.Location, Hit.Location + FVector(0, 0, 0.001f),
+				FQuat::Identity, ECC_WorldStatic, SphereColShape);
+			DrawDebugSphere(GetWorld(), Hit.Location, RadialImpactRadius, 50, FColor::Orange, false, 2.0f);
+			if (bSweepHit)
+			{
+				for (auto& Casualty : HitActors)
+				{
+					UStaticMeshComponent* CasualtyMesh = Cast<UStaticMeshComponent>(Casualty.GetActor()->GetRootComponent());
+					if (CasualtyMesh)
+					{
+						CasualtyMesh->AddRadialImpulse(Hit.Location, RadialImpactRadius, RadialImpactForce * 1000, ERadialImpulseFalloff::RIF_Constant, false);
+					}
+				}
+			}
+		}
+		
+	}
+}
+
 void AMPCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -161,6 +217,7 @@ void AMPCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMPCharacterBase::InteractPress);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AMPCharacterBase::FireForward);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMPCharacterBase::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMPCharacterBase::MoveRight);
