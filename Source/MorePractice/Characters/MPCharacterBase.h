@@ -4,14 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-
+#include "Components/TimelineComponent.h"
 #include "MPCharacterBase.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UStaticMeshComponent;
 class UCameraShakeBase;
-
+class AInteractableBase;
+class UCurveFloat;
 
 UCLASS()
 class MOREPRACTICE_API AMPCharacterBase : public ACharacter
@@ -30,6 +31,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player");
 	UStaticMeshComponent* StaticMesh;
+
+	UPROPERTY(EditAnywhere, Category = "Timeline")
+	UCurveFloat* CurveFloat;
 
 protected:
 
@@ -75,6 +79,11 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UCameraShakeBase> CamShake;
+	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
+	TSubclassOf<AInteractableBase> ActorToSpawn;
+
+	UFUNCTION()
+	void SpawnObject(FVector Loc, FRotator Rot);
 
 public:	
 
@@ -83,8 +92,17 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void Landed(const FHitResult& Hit) override;
+
 
 private:
 	AActor* OldFocusedActor;
+
+	FVector StartScale;
+	FVector TargetScale;
+	FTimeline SquashTimeline;
+
+	UFUNCTION()
+		void SquashProgress(float Value);
 
 };

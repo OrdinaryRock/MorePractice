@@ -8,6 +8,7 @@
 #include "GameFramework/Controller.h"
 #include "DrawDebugHelpers.h"
 #include "../Interact/InteractInterface.h"
+#include "../Interact/InteractableBase.h"
 
 // Sets default values
 AMPCharacterBase::AMPCharacterBase()
@@ -33,6 +34,9 @@ AMPCharacterBase::AMPCharacterBase()
 	bApplyRadialForce = true;
 	RadialImpactRadius = 200.0f;
 	RadialImpactForce = 2000.0f;
+
+	StartScale = FVector(1, 1, 1);
+	TargetScale = FVector(1.3f, 1.3f, 0.8f);
 }
 
 void AMPCharacterBase::MoveForward(float Amount)
@@ -162,6 +166,7 @@ void AMPCharacterBase::FireForward()
 
 	GetController()->GetPlayerViewPoint(Loc, Rot);
 
+
 	FVector Start = Loc;
 	FVector End = Start + (Rot.Vector() * TraceDistance);
 
@@ -172,6 +177,8 @@ void AMPCharacterBase::FireForward()
 	// Checks if we hit something and that something is movable and that something is simulating physics rn
 	if (bHit)
 	{
+		SpawnObject(Hit.Location, Rot);
+
 		
 		if (Hit.GetActor()->IsRootComponentMovable() && Hit.GetActor()->GetRootComponent()->IsSimulatingPhysics())
 		{
@@ -205,10 +212,17 @@ void AMPCharacterBase::FireForward()
 	}
 }
 
+void AMPCharacterBase::SpawnObject(FVector Loc, FRotator Rot)
+{
+	FActorSpawnParameters SpawnParams;
+	AActor* SpawnedActorRef = GetWorld()->SpawnActor<AInteractableBase>(ActorToSpawn, Loc, Rot, SpawnParams);
+}
+
 void AMPCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	AMPCharacterBase::TraceForward();
+	SquashTimeline.TickTimeline(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -230,4 +244,24 @@ void AMPCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMPCharacterBase::LookUpAtRate);
 
 
+}
+
+void AMPCharacterBase::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (CurveFloat)
+	{
+		FOnTimelineFloat TimelineProgress;
+		TimelineProgress.BindUFunction(this, FName("SquashProgress"));
+		SquashTimeline.AddInterpFloat(CurveFloat, TimelineProgress);
+		SquashTimeline.SetLooping(false);
+		SquashTimeline.PlayFromStart();
+	}
+}
+
+void AMPCharacterBase::SquashProgress(float Value)
+{
+	FVector NewScale = FMath::Lerp(StartScale, TargetScale, Value);
+	StaticMesh->SetWorldScale3D(NewScale);
 }
