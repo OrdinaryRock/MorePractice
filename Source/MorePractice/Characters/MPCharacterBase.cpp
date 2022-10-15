@@ -154,6 +154,8 @@ void AMPCharacterBase::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActo
 
 void AMPCharacterBase::FireForward()
 {
+	GetWorld()->GetFirstPlayerController()->PlayerCameraManager->StartCameraShake(CamShake, 1.0f);
+
 	FVector Loc;
 	FRotator Rot;
 	FHitResult Hit;

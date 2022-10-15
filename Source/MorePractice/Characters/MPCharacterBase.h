@@ -10,6 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UStaticMeshComponent;
+class UCameraShakeBase;
 
 
 UCLASS()
@@ -71,6 +72,9 @@ protected:
 	float RadialImpactForce;
 
 	TArray<FHitResult> HitActors;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UCameraShakeBase> CamShake;
 
 public:	
 
